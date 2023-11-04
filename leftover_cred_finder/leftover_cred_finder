@@ -1,0 +1,80 @@
+# history | grep -E "\-p [[:alnum:]]|--password [[:alnum:]]"
+# cat ~/.*history | grep -E "\-p [[:alnum:]]|--password [[:alnum:]]"
+
+import subprocess
+
+# checking_cmd_history_for_any_in_line_credentials
+
+creds_in_history_list = []
+
+
+def history_check():
+    try:
+        history = f"history | grep -E '\-p [[:alnum:]]|--password [[:alnum:]] | -p[[:alnum:]]'"
+        history_result = subprocess.check_output(history, shell=True, universal_newlines=True)
+        history_found = history_result.split('\n')
+        # history_found = history_result.stdout
+        if "Error" or "not found" not in history_found:
+            creds_in_history_list.append(histroy_found)
+
+    except:
+        pass
+
+    try:
+        cat_history = f"cat ~/.*history | grep -E '\-p [[:alnum:]]|--password [[:alnum:]]'"
+        cat_history_result = subprocess.check_output(cat_history, shell=True, universal_newlines=True)
+        # cat_history_found = cat_history_result.stdout
+        if "Error" or "not found" not in cat_history_result:
+            creds_in_history_list.append(cat_history_result)
+
+    except subprocess.CallProcessError as e:
+        print(e)
+
+    print("\n______________________________")
+    print("POSSIBLE CREDS IN PAST COMMANDS")
+    print("--------------------------------")
+    for cred in creds_in_history_list:
+        print(cred)
+
+
+# checking config files for
+def creds_in_config_check():
+    in_scope_dir = ['/usr','/var','/etc']
+    config_files = []
+    try:
+        for dir in in_scope_dir:
+            find_cmd = f"find / -type f -name config 2>/dev/null | grep {dir}"
+            find_cmd_result = subprocess.check_output(find_cmd, shell= True, universal_newlines=True)
+            each_find_result_list = find_cmd_result.split("\n")
+
+            for each_find in each_find_result_list:
+                if each_find.strip():
+                    config_files.append(each_find)
+                    #print(each_find+"\n___________________")
+            #config_files.append("-----------")
+
+    except subprocess.CalledProcessError as e:
+        print(e)
+
+    print("\n______________________")
+    print("POSSIBLE CRED LEFTOVERS")
+    print("------------------------")
+    for config_file in config_files:
+        try:
+            grep_for_pass = f'grep -E "pass|user|uid" {config_file}'
+            grep_result = subprocess.check_output(grep_for_pass, shell= True, universal_newlines= True)
+            if grep_result.strip():
+                print(f"File_Name  : {config_file}")
+                print(f"Creds_Found:")
+                grep_result_list = grep_result.split("\n")
+                for greped_lines in grep_result_list:
+                    print(f"\t{greped_lines}")
+
+        except:
+            pass#print(e)
+
+
+
+if __name__ == "__main__":
+    history_check()
+    creds_in_config_check()
